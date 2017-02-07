@@ -546,6 +546,46 @@ func (c *Client) RequestTemporaryCredentials(client *http.Client, callbackURL st
 // RequestToken requests token credentials from the server. See
 // http://tools.ietf.org/html/rfc5849#section-2.3 for information about token
 // credentials.
+func (c *Client) RenewToken(client *http.Client, temporaryCredentials *Credentials, verifier string) (*Credentials, url.Values, error) {
+	params := make(url.Values)
+	if verifier != "" {
+		params.Set("oauth_session_handle", verifier)
+		//params.Set("oauth_session_handle", verifier)
+	}
+	resp, err := c.Post(client, temporaryCredentials, c.TokenRequestURI, params)
+	if err != nil {
+		return nil, nil, err
+	}
+	p, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return nil, nil, err
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		return nil, nil, fmt.Errorf("OAuth server status %d, %s", resp.StatusCode, string(p))
+	}
+	fmt.Println("Body in OAuth Function >>>> >>>")
+	fmt.Println(p)
+	m, err := url.ParseQuery(string(p))
+	if err != nil {
+		return nil, nil, err
+	}
+	fmt.Println("ParseQuery in OAuth Function >>>> >>>")
+	fmt.Println(m)
+	tokens := m["oauth_token"]
+	if len(tokens) == 0 || tokens[0] == "" {
+		return nil, nil, errors.New("oauth: token missing from server result")
+	}
+	secrets := m["oauth_token_secret"]
+	if len(secrets) == 0 { // allow "" as a valid secret.
+		return nil, nil, errors.New("oauth: secret missing from server result")
+	}
+	return &Credentials{Token: tokens[0], Secret: secrets[0]}, m, nil
+}
+
+// RequestToken requests token credentials from the server. See
+// http://tools.ietf.org/html/rfc5849#section-2.3 for information about token
+// credentials.
 func (c *Client) RequestToken(client *http.Client, temporaryCredentials *Credentials, verifier string) (*Credentials, url.Values, error) {
 	params := make(url.Values)
 	if verifier != "" {
