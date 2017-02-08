@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"text/template"
 
-	"github.com/garyburd/go-oauth/oauth"
+	"github.com/gauravbansal74/go-oauth/oauth"
 
 	"golang.org/x/net/context"
 
